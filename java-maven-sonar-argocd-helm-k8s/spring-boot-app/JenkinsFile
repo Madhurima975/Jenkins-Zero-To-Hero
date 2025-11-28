@@ -7,6 +7,7 @@ pipeline {
   }
 
   stages {
+
     stage('Checkout') {
       steps {
         echo 'Fetching the repository...'
@@ -58,16 +59,33 @@ pipeline {
       steps {
         withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
           sh '''
+            set -x
+
+            # ensure we are in the repo root (Jenkins workspace)
+            pwd
+            ls
+
             git config user.email "madhurimabanik378@gmail.com"
             git config user.name "Madhurima Banik"
+
+            # update image tag
             sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
+
+            git status
+
             git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-            git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+
+            # if nothing changed, don't fail the build
+            if git diff --cached --quiet; then
+              echo "No changes to commit"
+            else
+              git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+              git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main
+            fi
           '''
         }
       }
     }
-  }
-}
 
+  } // end stages
+} // end pipeline
