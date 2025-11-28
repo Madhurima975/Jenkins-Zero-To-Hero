@@ -7,7 +7,6 @@ pipeline {
   }
 
   stages {
-
     stage('Checkout') {
       steps {
         echo 'Fetching the repository...'
@@ -22,21 +21,14 @@ pipeline {
       }
     }
 
-    // ✅ HARD-CODED SONARQUBE STAGE
-    stage('Static Code Analysis - SonarQube') {
+    stage('Static Code Analysis') {
       environment {
-        SONAR_URL = "https://unconjectural-emilee-glabrescent.ngrok-free.dev"   // 🔹 replace with your ngrok URL
-        SONAR_AUTH_TOKEN = "squ_8145264b718851ffb14807f9c38496185d93af72"                       // 🔹 replace with your Sonar token
+        SONAR_URL = "http://35.168.23.254:9000"
       }
       steps {
-        echo "Running SonarQube Analysis..."
-        sh '''
-          cd java-maven-sonar-argocd-helm-k8s/spring-boot-app
-          mvn sonar:sonar \
-            -Dsonar.projectKey=spring-boot-app \
-            -Dsonar.host.url=${SONAR_URL} \
-            -Dsonar.login=${SONAR_AUTH_TOKEN}
-        '''
+        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+          sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+        }
       }
     }
 
